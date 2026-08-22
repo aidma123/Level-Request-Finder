@@ -2,7 +2,7 @@
 # Automatic setup for the GD Level Request Finder notifier, on THIS machine.
 #
 # Usage:
-#   ./scripts/install.sh
+#   ./scripts/install-linux.sh
 #
 # What this does:
 #   - installs python3/venv/pip/git via apt or pacman (whichever is present)

@@ -17,7 +17,7 @@ Open **PowerShell** in the folder where you want the project, then:
 ```powershell
 git clone https://github.com/aidma123/level-request-finder.git
 cd level-request-finder
-.\scripts\install.ps1
+.\scripts\install-windows.ps1
 ```
 
 This installs the Python dependencies, scaffolds `config.json`, and
@@ -33,10 +33,10 @@ Start-ScheduledTask -TaskName "GD Level Request Notifier"
 
 To remove it later:
 ```powershell
-.\scripts\uninstall.ps1
+.\scripts\uninstall-windows.ps1
 ```
 
-**Note:** `install.ps1` hasn't been tested against a real Windows machine
+**Note:** `install-windows.ps1` hasn't been tested against a real Windows machine
 (this project was built and verified on Linux) — the manual steps below
 are the same thing spelled out by hand, useful if the script hits a snag
 specific to your setup.

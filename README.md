@@ -24,7 +24,7 @@ lists of channels *you* maintain (`moderators` for Twitch,
 
 ## Quick automated setup
 
-On a Debian/Ubuntu or Arch machine, `scripts/install.sh` does the manual
+On a Debian/Ubuntu or Arch machine, `scripts/install-linux.sh` does the manual
 setup below for you: installs system packages, creates the venv, installs
 dependencies, scaffolds `config.json`, and installs/starts a per-user
 systemd service with desktop notifications on.
@@ -32,13 +32,13 @@ systemd service with desktop notifications on.
 ```bash
 git clone https://github.com/aidma123/level-request-finder.git
 cd level-request-finder
-./scripts/install.sh
+./scripts/install-linux.sh
 ```
 
 It won't fill in your Twitch/Discord/ntfy credentials for you — edit the
 generated `config.json` afterward, then run
 `systemctl --user restart gd-level-request-notifier.service`. To remove the
-service later, run `scripts/uninstall.sh`.
+service later, run `scripts/uninstall-linux.sh`.
 
 The manual steps below are what this script automates, useful if you're on
 a different distro or want more control over each step.

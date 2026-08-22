@@ -1,8 +1,8 @@
-# Removes the Scheduled Task installed by install.ps1. Does not delete
+# Removes the Scheduled Task installed by install-windows.ps1. Does not delete
 # config.json, state.json, or the venv - remove those manually if wanted.
 #
 # Usage:
-#   .\scripts\uninstall.ps1
+#   .\scripts\uninstall-windows.ps1
 
 $ErrorActionPreference = "Stop"
 

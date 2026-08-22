@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Removes the systemd user service installed by install.sh. Does not delete
+# Removes the systemd user service installed by install-linux.sh. Does not delete
 # config.json, state.json, or the venv - remove those manually if wanted.
 #
 # Usage:
-#   ./scripts/uninstall.sh
+#   ./scripts/uninstall-linux.sh
 
 set -euo pipefail
 

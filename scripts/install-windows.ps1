@@ -1,7 +1,7 @@
 # Automatic setup for the GD Level Request Finder notifier, on THIS Windows machine.
 #
 # Usage (from PowerShell, in the repo root):
-#   .\scripts\install.ps1
+#   .\scripts\install-windows.ps1
 #
 # What this does:
 #   - checks for Python 3
