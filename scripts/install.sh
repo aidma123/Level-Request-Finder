@@ -1,45 +1,31 @@
 #!/usr/bin/env bash
-# Automatic setup for the GD Level Request Finder notifier.
+# Automatic setup for the GD Level Request Finder notifier, on THIS machine.
 #
 # Usage:
-#   ./scripts/install.sh --desktop   # this machine will show desktop popups (default if a display is detected)
-#   ./scripts/install.sh --server    # headless box; runs as a system service, no desktop notifications
+#   ./scripts/install.sh
 #
 # What this does:
 #   - installs python3/venv/pip/git via apt or pacman (whichever is present)
 #   - creates a venv in the repo and installs requirements.txt
 #   - copies config.example.json -> config.json if one doesn't already exist
-#   - installs and starts a systemd service (user service for --desktop, system service for --server)
+#   - installs and starts a per-user systemd service with desktop notifications on
 #
 # It does NOT fill in your Twitch/Discord/ntfy credentials - edit config.json
-# yourself after this runs, then `systemctl restart` (or `--user restart`)
-# the service.
+# yourself after this runs, then `systemctl --user restart` the service.
+#
+# DISCLAIMER: this only runs while THIS machine is powered on and you're
+# logged in. It is a per-user systemd service, not a system-wide daemon - if
+# the laptop is off, asleep, or logged out, it is not checking for streams
+# and you will not be notified during that time.
 
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_NAME="gd-level-request-notifier.service"
 
-MODE=""
-for arg in "$@"; do
-    case "$arg" in
-        --desktop) MODE="desktop" ;;
-        --server) MODE="server" ;;
-        *)
-            echo "Unknown argument: $arg" >&2
-            echo "Usage: $0 [--desktop|--server]" >&2
-            exit 1
-            ;;
-    esac
-done
-
-if [ -z "$MODE" ]; then
-    if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
-        MODE="desktop"
-    else
-        MODE="server"
-    fi
-    echo "No mode given, auto-detected: --$MODE (pass --desktop or --server to override)"
+if [ "$#" -gt 0 ]; then
+    echo "Usage: $0 (no arguments)" >&2
+    exit 1
 fi
 
 echo "==> Installing system packages"
@@ -70,29 +56,11 @@ if [ ! -f config.json ]; then
     CONFIG_IS_NEW=1
 fi
 
-if [ "$MODE" = "server" ] && [ "$CONFIG_IS_NEW" = "1" ]; then
-    python3 - "$REPO_DIR/config.json" <<'PYEOF'
-import json
-import sys
-
-path = sys.argv[1]
-with open(path) as f:
-    config = json.load(f)
-config.setdefault("notifications", {})["desktop"] = False
-with open(path, "w") as f:
-    json.dump(config, f, indent=2)
-    f.write("\n")
-PYEOF
-    echo "Headless server detected - disabled desktop notifications in config.json"
-fi
-
-echo "==> Installing systemd service ($MODE)"
+echo "==> Installing systemd user service"
 VENV_PYTHON="$REPO_DIR/venv/bin/python"
-
-if [ "$MODE" = "desktop" ]; then
-    UNIT_DIR="$HOME/.config/systemd/user"
-    mkdir -p "$UNIT_DIR"
-    cat > "$UNIT_DIR/$SERVICE_NAME" <<EOF
+UNIT_DIR="$HOME/.config/systemd/user"
+mkdir -p "$UNIT_DIR"
+cat > "$UNIT_DIR/$SERVICE_NAME" <<EOF
 [Unit]
 Description=GD Level Request Stream Notifier
 After=graphical-session.target
@@ -107,44 +75,22 @@ RestartSec=10
 [Install]
 WantedBy=default.target
 EOF
-    systemctl --user daemon-reload
-    systemctl --user enable --now "$SERVICE_NAME"
-    echo
-    echo "Installed as a user service. Check status with:"
-    echo "  systemctl --user status $SERVICE_NAME"
-    echo "Watch logs with:"
-    echo "  journalctl --user -u ${SERVICE_NAME%.service} -f"
-else
-    RUN_USER="$(id -un)"
-    cat <<EOF | sudo tee "/etc/systemd/system/$SERVICE_NAME" >/dev/null
-[Unit]
-Description=GD Level Request Stream Notifier
-After=network-online.target
-Wants=network-online.target
+systemctl --user daemon-reload
+systemctl --user enable --now "$SERVICE_NAME"
 
-[Service]
-User=$RUN_USER
-WorkingDirectory=$REPO_DIR
-ExecStart=$VENV_PYTHON main.py
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now "$SERVICE_NAME"
-    echo
-    echo "Installed as a system service. Check status with:"
-    echo "  sudo systemctl status $SERVICE_NAME"
-    echo "Watch logs with:"
-    echo "  journalctl -u ${SERVICE_NAME%.service} -f"
-fi
-
+echo
+echo "Installed as a user service. Check status with:"
+echo "  systemctl --user status $SERVICE_NAME"
+echo "Watch logs with:"
+echo "  journalctl --user -u ${SERVICE_NAME%.service} -f"
 echo
 if [ "$CONFIG_IS_NEW" = "1" ]; then
     echo "IMPORTANT: edit $REPO_DIR/config.json with your Twitch/Discord/ntfy credentials,"
-    echo "then restart the service (see command above) for them to take effect."
+    echo "then run: systemctl --user restart $SERVICE_NAME"
 else
     echo "config.json already existed - left untouched. Service is running with it."
 fi
+echo
+echo "DISCLAIMER: this only works while this machine is powered on and you are"
+echo "logged in. It will NOT check for streams (or notify you) while the"
+echo "machine is off, asleep, or logged out."

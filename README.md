@@ -3,6 +3,12 @@
 Watches Geometry Dash moderators' Twitch and YouTube channels and notifies
 you the moment one of them goes live doing a level-request stream.
 
+> **Disclaimer:** this runs as a service on your own machine (a per-user
+> systemd service, not a system-wide daemon), so it only works while that
+> machine is powered on and you're logged in. If it's off, asleep, or
+> logged out, nothing is checking for streams and you won't be notified
+> during that time.
+
 Neither platform has a "GD moderator" flag to query, so this tool polls
 lists of channels *you* maintain (`moderators` for Twitch,
 `youtube_channels` for YouTube) and flags any that are:
@@ -15,25 +21,21 @@ lists of channels *you* maintain (`moderators` for Twitch,
 
 ## Quick automated setup
 
-For a Debian/Ubuntu or Arch machine (desktop or headless server), `scripts/install.sh`
-does the manual setup below for you: installs system packages, creates the
-venv, installs dependencies, scaffolds `config.json`, and installs/starts a
-systemd service (a per-user service with desktop notifications on a machine
-with a display, or a system service with desktop notifications off on a
-headless box).
+On a Debian/Ubuntu or Arch machine, `scripts/install.sh` does the manual
+setup below for you: installs system packages, creates the venv, installs
+dependencies, scaffolds `config.json`, and installs/starts a per-user
+systemd service with desktop notifications on.
 
 ```bash
 git clone https://github.com/aidma123/level-request-finder.git
 cd level-request-finder
-./scripts/install.sh --desktop   # on a machine that should show desktop popups
-# or
-./scripts/install.sh --server    # on a headless server/VPS
+./scripts/install.sh
 ```
 
 It won't fill in your Twitch/Discord/ntfy credentials for you — edit the
-generated `config.json` afterward, then restart the service (the script
-prints the exact command for your mode). To remove the service later, run
-`scripts/uninstall.sh` with the same `--desktop`/`--server` flag.
+generated `config.json` afterward, then run
+`systemctl --user restart gd-level-request-notifier.service`. To remove the
+service later, run `scripts/uninstall.sh`.
 
 The manual steps below are what this script automates, useful if you're on
 a different distro or want more control over each step.
