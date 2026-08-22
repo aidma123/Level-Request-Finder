@@ -37,13 +37,17 @@ def notify_discord(webhook_url, event):
     if not webhook_url:
         return
     content = (
-        f'🟢 **{event["channel_name"]}** is live on {event["platform"].capitalize()} '
+        f'@everyone 🟢 **{event["channel_name"]}** is live on {event["platform"].capitalize()} '
         f'doing level requests!\n'
         f'**{event["title"]}**\n'
         f'{event["url"]}'
     )
+    payload = {
+        "content": content,
+        "allowed_mentions": {"parse": ["everyone"]},
+    }
     try:
-        requests.post(webhook_url, json={"content": content}, timeout=10)
+        requests.post(webhook_url, json=payload, timeout=10)
     except requests.RequestException as e:
         print(f"Failed to send Discord notification: {e}")
 
