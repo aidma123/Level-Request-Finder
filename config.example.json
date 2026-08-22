@@ -1,0 +1,28 @@
+{
+  "twitch_client_id": "YOUR_TWITCH_CLIENT_ID",
+  "twitch_client_secret": "YOUR_TWITCH_CLIENT_SECRET",
+  "poll_interval_seconds": 60,
+  "moderators": [
+    "example_gd_mod_channel_1",
+    "example_gd_mod_channel_2"
+  ],
+  "level_request_keywords": [
+    "level request",
+    "lvl request",
+    "level req",
+    "lr stream",
+    "req stream",
+    "sending levels",
+    "send your level",
+    "send levels",
+    " lr "
+  ],
+  "require_gd_category": true,
+  "gd_category_name": "Geometry Dash",
+  "notifications": {
+    "desktop": true,
+    "console": true,
+    "discord_webhook_url": ""
+  },
+  "state_file": "state.json"
+}
