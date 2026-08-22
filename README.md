@@ -19,6 +19,9 @@ lists of channels *you* maintain (`moderators` for Twitch,
 3. Have a title that matches a level-request keyword (e.g. "level request",
    "sending levels", "LR stream", ...)
 
+> **On Windows?** See [WINDOWS.md](WINDOWS.md) instead — setup and running
+> in the background both work differently there (no `systemd`).
+
 ## Quick automated setup
 
 On a Debian/Ubuntu or Arch machine, `scripts/install.sh` does the manual
