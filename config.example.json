@@ -60,6 +60,7 @@
   ],
   "require_gd_category": true,
   "gd_category_name": "Geometry Dash",
+  "require_level_request_keywords": true,
   "notifications": {
     "desktop": true,
     "console": true,

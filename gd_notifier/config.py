@@ -20,6 +20,7 @@ DEFAULTS = {
     ],
     "require_gd_category": True,
     "gd_category_name": "Geometry Dash",
+    "require_level_request_keywords": True,
     "notifications": {
         "desktop": True,
         "console": True,

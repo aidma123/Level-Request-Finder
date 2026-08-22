@@ -31,6 +31,7 @@ def _twitch_events(config, twitch_client):
             config["level_request_keywords"],
             config["require_gd_category"],
             config["gd_category_name"],
+            require_keywords=config.get("require_level_request_keywords", True),
         )
     ]
 
@@ -58,7 +59,8 @@ def _youtube_events(config, youtube_client):
     matching = [
         s
         for s in live_streams
-        if title_matches_keywords(s["title"], config["level_request_keywords"])
+        if not config.get("require_level_request_keywords", True)
+        or title_matches_keywords(s["title"], config["level_request_keywords"])
     ]
 
     events = [
