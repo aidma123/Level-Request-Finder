@@ -52,6 +52,21 @@ def notify_discord(webhook_url, event):
         print(f"Failed to send Discord notification: {e}")
 
 
+def notify_ntfy(ntfy_url, event):
+    if not ntfy_url:
+        return
+    body = f'{event["title"]}\n{event["url"]}'.encode("utf-8")
+    headers = {
+        "Title": f'{event["channel_name"]} is live - GD Level Requests!',
+        "Click": event["url"],
+        "Tags": "loudspeaker",
+    }
+    try:
+        requests.post(ntfy_url, data=body, headers=headers, timeout=10)
+    except requests.RequestException as e:
+        print(f"Failed to send ntfy notification: {e}")
+
+
 def notify_all(event, config):
     notif_cfg = config.get("notifications", {})
     if notif_cfg.get("console", True):
@@ -61,3 +76,6 @@ def notify_all(event, config):
     webhook = notif_cfg.get("discord_webhook_url")
     if webhook:
         notify_discord(webhook, event)
+    ntfy_url = notif_cfg.get("ntfy_url")
+    if ntfy_url:
+        notify_ntfy(ntfy_url, event)

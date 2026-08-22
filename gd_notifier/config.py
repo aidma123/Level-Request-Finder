@@ -25,6 +25,7 @@ DEFAULTS = {
         "desktop": True,
         "console": True,
         "discord_webhook_url": "",
+        "ntfy_url": "",
     },
     "state_file": "state.json",
 }

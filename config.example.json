@@ -64,7 +64,8 @@
   "notifications": {
     "desktop": true,
     "console": true,
-    "discord_webhook_url": ""
+    "discord_webhook_url": "",
+    "ntfy_url": ""
   },
   "state_file": "state.json"
 }
