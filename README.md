@@ -110,13 +110,22 @@ now" via the official YouTube Data API — a single live-check call costs
 polling more than a handful of channels on anything shorter than a very
 long interval.
 
-Instead, this tool requests each channel's public `/live` URL
-(`youtube.com/channel/<id>/live`) and checks whether the page's embedded
-data marks a broadcast as currently live. This needs no API key and has no
-quota limit, but it depends on YouTube's current page markup rather than a
-stable, versioned API — if YouTube changes that markup, YouTube detection
-may stop working until the tool is updated (Twitch detection is unaffected
-either way, since it uses Twitch's official Helix API).
+An early version of this tool instead fetched each channel's public
+`/live` page (`youtube.com/channel/<id>/live`) and parsed the embedded
+page data for a live marker. Live testing showed that approach gets
+blocked: YouTube serves a "Sign in to confirm you're not a bot" wall for
+that HTML endpoint when the request comes from a datacenter/cloud IP, even
+with realistic browser headers.
+
+What's used now instead is YouTube's "innertube" browse API — the same
+anonymous AJAX call the web client itself makes to render a channel's
+"Live" tab. It isn't gated the same way as the HTML page, needs no API key
+or login, and has no quota limit, but it depends on YouTube's internal
+response shape rather than a stable, versioned public API — if YouTube
+changes that shape, YouTube detection may stop working until the tool is
+updated. Twitch detection is unaffected either way, since it uses Twitch's
+official Helix API. This was verified against real GD moderator channels
+and a known always-live control channel before being shipped.
 
 ## Usage
 

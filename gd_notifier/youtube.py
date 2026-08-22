@@ -1,39 +1,80 @@
 """Lightweight YouTube live-stream detection.
 
-Uses each channel's public /live URL instead of the YouTube Data API,
-since that API's free quota (10,000 units/day, ~100 units per live-check
-call) can't support checking more than a handful of channels on anything
-shorter than a very long interval. This trades an official, stable API
-contract for one that depends on YouTube's current page markup — if
-YouTube changes their page structure, the regexes below may need updating.
-"""
+Uses YouTube's internal "innertube" browse API (the same anonymous AJAX
+call the web client itself makes to render a channel's "Live" tab) instead
+of the official Data API, since that API's free quota (10,000 units/day,
+~100 units per live-check call) can't support polling more than a handful
+of channels on anything shorter than a very long interval.
 
-import re
+An earlier version of this fetched the channel's public HTML /live page
+directly and parsed it for a live marker. That was scrapped after testing
+showed YouTube serves a "Sign in to confirm you're not a bot" wall
+(playabilityStatus: LOGIN_REQUIRED) for that HTML endpoint when requests
+come from a datacenter/cloud IP, even with realistic browser headers. The
+innertube browse endpoint below is not gated the same way, since it's the
+same request path used by every anonymous pageview, but it still depends
+on YouTube's internal response shape rather than a stable, versioned
+public API — if YouTube changes it, this may need updating.
+"""
 
 import requests
 
-LIVE_URL_TEMPLATE = "https://www.youtube.com/channel/{channel_id}/live"
-USER_AGENT = "Mozilla/5.0 (compatible; GDLevelRequestNotifier/1.0)"
+BROWSE_URL = "https://www.youtube.com/youtubei/v1/browse"
 
-# When a channel is live, YouTube's /live page has a canonical link pointing
-# at the actual watch page, and the embedded player data marks the current
-# broadcast as live (as opposed to an upcoming premiere or a past replay).
-_CANONICAL_VIDEO_RE = re.compile(
-    r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]+)"'
-)
-_IS_LIVE_NOW_RE = re.compile(r'"isLiveNow"\s*:\s*true')
-_TITLE_RE = re.compile(r'<meta name="title" content="([^"]*)"')
+# Public API key embedded in every anonymous YouTube pageview's client JS.
+# This is what the web client itself uses to call innertube endpoints; it's
+# not a scraped secret and carries no special privileges.
+API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+
+# Opaque protobuf "params" value selecting a channel's "Live" tab, as sent
+# by the real web client when you open a channel's Live tab.
+LIVE_TAB_PARAMS = "EgdzdHJlYW1z8gYECgJ6AA%3D%3D"
+
+_CLIENT_CONTEXT = {
+    "client": {"clientName": "WEB", "clientVersion": "2.20240101.00.00"}
+}
+
+
+def _iter_rich_items(obj):
+    """Walk the browse response looking for richItemRenderer nodes, which
+    wrap each video/stream tile in the channel's Live tab grid."""
+    if isinstance(obj, dict):
+        if "richItemRenderer" in obj:
+            yield obj["richItemRenderer"]
+        for value in obj.values():
+            yield from _iter_rich_items(value)
+    elif isinstance(obj, list):
+        for value in obj:
+            yield from _iter_rich_items(value)
+
+
+def _is_live_lockup(lockup):
+    overlays = (
+        lockup.get("contentImage", {})
+        .get("thumbnailViewModel", {})
+        .get("overlays", [])
+    )
+    return any(
+        badge.get("thumbnailBadgeViewModel", {}).get("badgeStyle")
+        == "THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE"
+        for overlay in overlays
+        for badge in overlay.get("thumbnailBottomOverlayViewModel", {}).get("badges", [])
+    )
 
 
 class YouTubeClient:
     def __init__(self):
         self._session = requests.Session()
-        self._session.headers.update({"User-Agent": USER_AGENT})
 
     def _check_channel(self, channel_id):
+        body = {
+            "context": _CLIENT_CONTEXT,
+            "browseId": channel_id,
+            "params": LIVE_TAB_PARAMS,
+        }
         try:
-            resp = self._session.get(
-                LIVE_URL_TEMPLATE.format(channel_id=channel_id), timeout=10
+            resp = self._session.post(
+                BROWSE_URL, params={"key": API_KEY}, json=body, timeout=10
             )
         except requests.RequestException:
             return None
@@ -41,18 +82,32 @@ class YouTubeClient:
         if resp.status_code != 200:
             return None
 
-        html = resp.text
-        video_match = _CANONICAL_VIDEO_RE.search(html)
-        if not video_match or not _IS_LIVE_NOW_RE.search(html):
+        try:
+            data = resp.json()
+        except ValueError:
             return None
 
-        video_id = video_match.group(1)
-        title_match = _TITLE_RE.search(html)
-        return {
-            "video_id": video_id,
-            "title": title_match.group(1) if title_match else "",
-            "url": f"https://www.youtube.com/watch?v={video_id}",
-        }
+        for item in _iter_rich_items(data):
+            lockup = item.get("content", {}).get("lockupViewModel", {})
+            if not _is_live_lockup(lockup):
+                continue
+
+            video_id = lockup.get("contentId")
+            if not video_id:
+                continue
+
+            title = (
+                lockup.get("metadata", {})
+                .get("lockupMetadataViewModel", {})
+                .get("title", {})
+                .get("content", "")
+            )
+            return {
+                "video_id": video_id,
+                "title": title,
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+            }
+        return None
 
     def get_live_channels(self, channel_map):
         """channel_map: {display_name: channel_id}. Returns a list of live
