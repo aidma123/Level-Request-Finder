@@ -13,6 +13,31 @@ lists of channels *you* maintain (`moderators` for Twitch,
 3. Have a title that matches a level-request keyword (e.g. "level request",
    "sending levels", "LR stream", ...)
 
+## Quick automated setup
+
+For a Debian/Ubuntu or Arch machine (desktop or headless server), `scripts/install.sh`
+does the manual setup below for you: installs system packages, creates the
+venv, installs dependencies, scaffolds `config.json`, and installs/starts a
+systemd service (a per-user service with desktop notifications on a machine
+with a display, or a system service with desktop notifications off on a
+headless box).
+
+```bash
+git clone https://github.com/aidma123/level-request-finder.git
+cd level-request-finder
+./scripts/install.sh --desktop   # on a machine that should show desktop popups
+# or
+./scripts/install.sh --server    # on a headless server/VPS
+```
+
+It won't fill in your Twitch/Discord/ntfy credentials for you — edit the
+generated `config.json` afterward, then restart the service (the script
+prints the exact command for your mode). To remove the service later, run
+`scripts/uninstall.sh` with the same `--desktop`/`--server` flag.
+
+The manual steps below are what this script automates, useful if you're on
+a different distro or want more control over each step.
+
 ## Setup
 
 1. Install dependencies:
