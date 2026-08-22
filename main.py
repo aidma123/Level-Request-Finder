@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-"""Watches a list of Geometry Dash moderator Twitch channels and notifies
-you when one goes live and appears to be running a level-request stream."""
+"""Watches a list of Geometry Dash moderator Twitch and YouTube channels
+and notifies you when one goes live and appears to be running a
+level-request stream."""
 
 import argparse
 import sys
 import time
 
 from gd_notifier.config import load_config
-from gd_notifier.filters import is_level_request_stream
+from gd_notifier.filters import is_level_request_stream, title_matches_keywords
 from gd_notifier.notifier import notify_all
 from gd_notifier.state import load_state, save_state
 from gd_notifier.twitch import TwitchClient
+from gd_notifier.youtube import YouTubeClient
 
 
-def check_once(config, client, state):
+def _twitch_events(config, twitch_client):
     moderators = config.get("moderators", [])
     if not moderators:
-        print(
-            "No moderators configured. Add Twitch usernames to 'moderators' "
-            "in your config file."
-        )
-        return state
+        return [], set()
 
-    streams = client.get_live_streams(moderators)
-    live_ids = {s["id"] for s in streams}
+    streams = twitch_client.get_live_streams(moderators)
+    live_ids = {f"twitch:{s['id']}" for s in streams}
 
     matching = [
         s
@@ -36,15 +34,68 @@ def check_once(config, client, state):
         )
     ]
 
-    notified = set(state.get("notified_stream_ids", []))
-    for stream in matching:
-        if stream["id"] not in notified:
-            notify_all(stream, config)
-            notified.add(stream["id"])
+    events = [
+        {
+            "id": f"twitch:{s['id']}",
+            "platform": "twitch",
+            "channel_name": s["user_name"],
+            "title": s["title"],
+            "url": f"https://twitch.tv/{s['user_login']}",
+        }
+        for s in matching
+    ]
+    return events, live_ids
+
+
+def _youtube_events(config, youtube_client):
+    channel_map = config.get("youtube_channels", {})
+    if not channel_map:
+        return [], set()
+
+    live_streams = youtube_client.get_live_channels(channel_map)
+    live_ids = {f"youtube:{s['video_id']}" for s in live_streams}
+
+    matching = [
+        s
+        for s in live_streams
+        if title_matches_keywords(s["title"], config["level_request_keywords"])
+    ]
+
+    events = [
+        {
+            "id": f"youtube:{s['video_id']}",
+            "platform": "youtube",
+            "channel_name": s["channel_name"],
+            "title": s["title"],
+            "url": s["url"],
+        }
+        for s in matching
+    ]
+    return events, live_ids
+
+
+def check_once(config, twitch_client, youtube_client, state):
+    if not config.get("moderators") and not config.get("youtube_channels"):
+        print(
+            "No channels configured. Add Twitch usernames to 'moderators' and/or "
+            "YouTube channel IDs to 'youtube_channels' in your config file."
+        )
+        return state
+
+    twitch_events, twitch_live_ids = _twitch_events(config, twitch_client)
+    youtube_events, youtube_live_ids = _youtube_events(config, youtube_client)
+    all_events = twitch_events + youtube_events
+    all_live_ids = twitch_live_ids | youtube_live_ids
+
+    notified = set(state.get("notified_ids", []))
+    for event in all_events:
+        if event["id"] not in notified:
+            notify_all(event, config)
+            notified.add(event["id"])
 
     # Drop ids for streams that ended, so a future stream from the same
     # channel notifies again.
-    state["notified_stream_ids"] = list(notified & live_ids)
+    state["notified_ids"] = list(notified & all_live_ids)
     return state
 
 
@@ -61,7 +112,12 @@ def main():
     if args.interval:
         config["poll_interval_seconds"] = args.interval
 
-    if not config.get("twitch_client_id") or not config.get("twitch_client_secret"):
+    moderators = config.get("moderators", [])
+    youtube_channels = config.get("youtube_channels", {})
+
+    if moderators and (
+        not config.get("twitch_client_id") or not config.get("twitch_client_secret")
+    ):
         print("Missing Twitch API credentials.")
         print(
             "Set twitch_client_id / twitch_client_secret in your config file, "
@@ -70,21 +126,22 @@ def main():
         print("Register a free app at https://dev.twitch.tv/console/apps to get these.")
         sys.exit(1)
 
-    client = TwitchClient(config["twitch_client_id"], config["twitch_client_secret"])
+    twitch_client = TwitchClient(config.get("twitch_client_id"), config.get("twitch_client_secret"))
+    youtube_client = YouTubeClient()
     state = load_state(config["state_file"])
 
     if args.once:
-        state = check_once(config, client, state)
+        state = check_once(config, twitch_client, youtube_client, state)
         save_state(config["state_file"], state)
         return
 
     print(
-        f"Watching {len(config.get('moderators', []))} moderator(s) "
-        f"every {config['poll_interval_seconds']}s. Ctrl+C to stop."
+        f"Watching {len(moderators)} Twitch channel(s) and {len(youtube_channels)} "
+        f"YouTube channel(s) every {config['poll_interval_seconds']}s. Ctrl+C to stop."
     )
     try:
         while True:
-            state = check_once(config, client, state)
+            state = check_once(config, twitch_client, youtube_client, state)
             save_state(config["state_file"], state)
             time.sleep(config["poll_interval_seconds"])
     except KeyboardInterrupt:

@@ -3,7 +3,7 @@
 import json
 import os
 
-DEFAULT_STATE = {"notified_stream_ids": []}
+DEFAULT_STATE = {"notified_ids": []}
 
 
 def load_state(path):

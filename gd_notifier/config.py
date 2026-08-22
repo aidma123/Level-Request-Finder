@@ -6,6 +6,7 @@ import os
 DEFAULTS = {
     "poll_interval_seconds": 60,
     "moderators": [],
+    "youtube_channels": {},
     "level_request_keywords": [
         "level request",
         "lvl request",

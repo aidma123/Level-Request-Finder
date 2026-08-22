@@ -1,16 +1,21 @@
-"""Notification backends: console, desktop popup, and Discord webhook."""
+"""Notification backends: console, desktop popup, and Discord webhook.
+
+All notify_* functions take a normalized "event" dict:
+{"platform": "twitch"|"youtube", "channel_name": str, "title": str, "url": str}
+"""
 
 import requests
 
 
-def notify_console(stream):
+def notify_console(event):
+    platform = event["platform"].capitalize()
     print(
-        f'[LIVE] {stream["user_name"]} is doing level requests! '
-        f'"{stream["title"]}" -> https://twitch.tv/{stream["user_login"]}'
+        f'[LIVE - {platform}] {event["channel_name"]} is doing level requests! '
+        f'"{event["title"]}" -> {event["url"]}'
     )
 
 
-def notify_desktop(stream):
+def notify_desktop(event):
     try:
         from plyer import notification
     except ImportError:
@@ -19,8 +24,8 @@ def notify_desktop(stream):
 
     try:
         notification.notify(
-            title=f'{stream["user_name"]} is live - GD Level Requests!',
-            message=stream.get("title", ""),
+            title=f'{event["channel_name"]} is live - GD Level Requests!',
+            message=event.get("title", ""),
             app_name="GD Level Request Notifier",
             timeout=15,
         )
@@ -28,13 +33,14 @@ def notify_desktop(stream):
         print(f"Failed to send desktop notification: {e}")
 
 
-def notify_discord(webhook_url, stream):
+def notify_discord(webhook_url, event):
     if not webhook_url:
         return
     content = (
-        f'🟢 **{stream["user_name"]}** is live doing level requests!\n'
-        f'**{stream["title"]}**\n'
-        f'https://twitch.tv/{stream["user_login"]}'
+        f'🟢 **{event["channel_name"]}** is live on {event["platform"].capitalize()} '
+        f'doing level requests!\n'
+        f'**{event["title"]}**\n'
+        f'{event["url"]}'
     )
     try:
         requests.post(webhook_url, json={"content": content}, timeout=10)
@@ -42,12 +48,12 @@ def notify_discord(webhook_url, stream):
         print(f"Failed to send Discord notification: {e}")
 
 
-def notify_all(stream, config):
+def notify_all(event, config):
     notif_cfg = config.get("notifications", {})
     if notif_cfg.get("console", True):
-        notify_console(stream)
+        notify_console(event)
     if notif_cfg.get("desktop", False):
-        notify_desktop(stream)
+        notify_desktop(event)
     webhook = notif_cfg.get("discord_webhook_url")
     if webhook:
-        notify_discord(webhook, stream)
+        notify_discord(webhook, event)
