@@ -74,6 +74,19 @@ def _youtube_events(config, youtube_client):
     return events, live_ids
 
 
+def send_test_notification(config):
+    """Fire a fake event through the real notification code path (console,
+    desktop, Discord) without touching Twitch/YouTube, so the delivery
+    pipeline can be tested on demand."""
+    event = {
+        "platform": "twitch",
+        "channel_name": "TestModerator",
+        "title": "[TEST] Sending Levels! Come get your level rated - LR stream",
+        "url": "https://twitch.tv/example",
+    }
+    notify_all(event, config)
+
+
 def check_once(config, twitch_client, youtube_client, state):
     if not config.get("moderators") and not config.get("youtube_channels"):
         print(
@@ -106,11 +119,20 @@ def main():
     parser.add_argument("--config", default="config.json", help="Path to config JSON file")
     parser.add_argument("--once", action="store_true", help="Run a single check and exit")
     parser.add_argument("--interval", type=int, help="Override poll interval in seconds")
+    parser.add_argument(
+        "--test-notify",
+        action="store_true",
+        help="Send a fake notification through console/desktop/Discord and exit, to test delivery",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config)
     if args.interval:
         config["poll_interval_seconds"] = args.interval
+
+    if args.test_notify:
+        send_test_notification(config)
+        return
 
     moderators = config.get("moderators", [])
     youtube_channels = config.get("youtube_channels", {})
