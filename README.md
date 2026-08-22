@@ -35,15 +35,48 @@ channels *you* maintain (`moderators` in your config) and flags any that are:
    - Fill in `twitch_client_id` / `twitch_client_secret` (or instead set the
      `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` environment variables and
      leave these blank — env vars take precedence).
-   - Replace `moderators` with the actual Twitch usernames (the part after
-     `twitch.tv/`) of the GD moderators/streamers you want to watch. You can
-     find current level-request streamers via the Geometry Dash Twitch
-     directory (https://www.twitch.tv/directory/game/Geometry%20Dash) or the
-     GD community Discord.
+   - `moderators` already ships pre-filled with current GD moderators' Twitch
+     handles (see the table below) — trim it down or add more as the mod
+     roster changes.
    - Adjust `level_request_keywords` if you want to catch different title
      phrasing.
    - Set `require_gd_category` to `false` if you want to catch streams even
      when Twitch has them miscategorized.
+
+### Current GD moderators (Twitch)
+
+| Name | Twitch |
+| --- | --- |
+| agdor (Elder) | [gdagdor](https://twitch.tv/gdagdor) |
+| Halapeenyo (Elder) | [halapeenyo](https://twitch.tv/halapeenyo) |
+| KazVixX (Elder) | [kazvixx](https://twitch.tv/kazvixx) |
+| Lia (Elder) | [liathecatto](https://twitch.tv/liathecatto) |
+| Tygore (Elder) | [tygoregd](https://twitch.tv/tygoregd) |
+| AgSilver | [itsagsilver](https://twitch.tv/itsagsilver) |
+| arcanin | [rawrcanin](https://twitch.tv/rawrcanin) |
+| Ausk | [ausk_gd](https://twitch.tv/ausk_gd) |
+| Danolex | [danolex](https://twitch.tv/danolex) |
+| Destriv | [destriv_](https://twitch.tv/destriv_) |
+| drane | [imdrane](https://twitch.tv/imdrane) |
+| DreamEater | [dreameater_gd](https://twitch.tv/dreameater_gd) |
+| FakeHATETAG | [fakehatetag_](https://twitch.tv/fakehatetag_) |
+| GirlyAle02 | [girlyale02_](https://twitch.tv/girlyale02_) |
+| Hychie | [hychie_](https://twitch.tv/hychie_) |
+| Incidius | [incidiusgd](https://twitch.tv/incidiusgd) |
+| Infra | [infra553](https://twitch.tv/infra553) |
+| kreno | [1kreno](https://twitch.tv/1kreno) |
+| mag | [btwmagna](https://twitch.tv/btwmagna) |
+| orots | [orots](https://twitch.tv/orots) |
+| RavingRafters | [ravingrafters](https://twitch.tv/ravingrafters) |
+| rustere | [rustere](https://twitch.tv/rustere) |
+| Starr44 | [starr44_](https://twitch.tv/starr44_) |
+| SwtCyn | [swtcyn](https://twitch.tv/swtcyn) |
+| Tess | [strawberrytess](https://twitch.tv/strawberrytess) |
+| thejshadow | [thejshadow_](https://twitch.tv/thejshadow_) |
+| tricipital | [tricipital](https://twitch.tv/tricipital) |
+
+Source: [GD Mod Outreach doc](https://hackmd.io/@acezure/GD-Mod-Outreach) —
+re-check it periodically since the mod roster and handles can change.
 
 4. (Optional) Enable a Discord webhook notification by setting
    `notifications.discord_webhook_url` to a webhook URL from your server's
